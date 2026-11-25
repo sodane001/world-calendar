@@ -1,0 +1,787 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="世界の暦を同じ日付で比較。西暦、仏暦、エチオピア暦、ネパール暦など22種類に対応。">
+<title>世界の暦帳｜暦比較ツール</title>
+<style>
+:root {
+  color-scheme: light;
+  --ink:#152d3c; --quiet:#4a6171; --line:#d7e3e8; --paper:#eff5f6;
+  --teal:#076657; --teal-light:#dff2ec; --navy:#101f37;
+  font-family:"Yu Gothic UI","Hiragino Sans",Meiryo,system-ui,sans-serif;
+  line-height:1.55;
+}
+*, *::before, *::after { box-sizing:border-box }
+[hidden] { display:none !important }
+body { margin:0; background:var(--paper); color:var(--ink) }
+button, input, select { font:inherit }
+button, select, summary { cursor:pointer }
+:focus-visible { outline:3px solid #128c76; outline-offset:3px }
+.wrap { width:min(1120px,calc(100% - 72px)); margin-inline:auto }
+.hero { background:linear-gradient(115deg,#101e37 35%,#143447 100%); color:white; overflow:hidden }
+.hero-inner { height:291px; position:relative; padding-top:24px }
+.brand { display:flex; align-items:center; gap:11px; color:#d8eae9; font-weight:700 }
+.brand-icon { height:19px; width:19px; border:1px solid #76dbbe; border-radius:5px; position:relative }
+.brand-icon::before { content:""; position:absolute; inset:5px 2px auto; border-top:1px solid #76dbbe }
+.brand-icon::after { content:""; position:absolute; border:1px solid #76dbbe; width:4px; height:4px; top:9px; left:6px; border-radius:1px }
+.hero-content { position:relative; z-index:1; margin-top:44px }
+h1,h2,h3,p { margin:0 }
+h1 { font-size:clamp(2.25rem,5vw,3.55rem); letter-spacing:.035em; line-height:1.18; font-weight:750 }
+.hero p { font-size:1.05rem; margin-top:13px; color:#c2d8dd }
+.small-only { display:none }
+.orbit { position:absolute; right:44px; top:-41px; width:385px; height:385px; border:1px solid #75d3c33d; border-radius:50%; transform:rotate(-19deg); pointer-events:none }
+.orbit i { position:absolute; border:1px solid #75d3c33d; border-radius:50%; inset:33px }
+.orbit i:nth-child(2) { inset:68px }
+.orbit i:nth-child(3) { inset:105px }
+.orbit b { position:absolute; top:109px; right:41px; width:9px; height:9px; border-radius:50%; background:#91e8c9; box-shadow:0 0 19px #a3edd5 }
+.orbit::after { content:""; position:absolute; inset:46% -7%; border-top:1px solid #75d3c339 }
+main { position:relative; margin-top:-42px }
+.surface { border:1px solid var(--line); border-radius:17px; background:#fff }
+.input-panel { padding:22px 26px 0; box-shadow:0 10px 32px #142e4221 }
+.section-head { display:flex; justify-content:space-between; gap:14px; align-items:center }
+h2 { font-size:1.46rem; letter-spacing:.025em }
+.quiet, .primary { min-height:42px; border-radius:8px; padding:7px 14px; font-size:.9rem; font-weight:700; white-space:nowrap }
+.quiet { border:1px solid var(--line); background:white; color:var(--ink) }
+.quiet:hover, .quiet[aria-pressed="true"] { background:var(--teal-light); border-color:#9ecfc1; color:var(--teal) }
+.primary { border:1px solid var(--teal); background:var(--teal); color:white; padding-inline:20px }
+.primary:hover { background:#064e44 }
+button:disabled { opacity:.55; cursor:default }
+.editor { padding-block:14px; margin:0 }
+.editor + .editor { border-top:1px solid var(--line) }
+fieldset { border:0; margin:0; padding:0; min-width:0 }
+legend { padding:0; margin-bottom:7px; color:var(--teal); font-size:.875rem; font-weight:750 }
+.editor:only-child legend, #editors:not(:has(.editor:nth-child(2):not([hidden]))) legend { display:none }
+.fields { display:flex; align-items:end; gap:10px; flex-wrap:wrap }
+.fields label { display:grid; font-size:.875rem; font-weight:650; gap:4px; flex:1 1 87px; min-width:0 }
+.fields .cal-field { flex:2.5 1 210px }
+.fields .long-field { flex:3 1 205px }
+input,select { min-width:0; width:100%; height:44px; padding:7px 11px; border:1px solid #c7d6df; border-radius:8px; color:var(--ink); background:white }
+select { appearance:none; padding-right:31px; background-image:linear-gradient(45deg,transparent 50%,#536b76 50%),linear-gradient(135deg,#536b76 50%,transparent 50%); background-position:calc(100% - 17px) 50%,calc(100% - 12px) 50%; background-size:5px 5px; background-repeat:no-repeat; text-overflow:ellipsis }
+select:disabled { background-color:#f0f3f5; cursor:default }
+.entry-info { font-size:.8125rem; margin-top:8px }
+.muted { color:var(--quiet) }
+.error { font-size:.875rem; color:#992e1f; margin-top:6px }
+.date-actions { display:flex; gap:7px; margin-top:9px }
+.date-actions .quiet { min-height:35px; padding:4px 12px }
+.date-line { background:#e9f5f1; border-radius:0 0 16px 16px; border-top:1px solid #cfe7df; margin-inline:-26px; padding:12px 26px; display:flex; gap:7px 12px; flex-wrap:wrap; align-items:center }
+.date-caption,.date-tag { color:var(--teal); font-size:.8125rem; font-weight:750 }
+.date-line strong { font-variant-numeric:tabular-nums }
+.diff { padding:2px 8px; background:white; border-radius:5px; font-size:.875rem; margin-left:auto }
+.results { margin-top:35px }
+.result-head .muted { font-size:.875rem; margin-top:3px }
+.filter-row { display:flex; align-items:center; gap:10px; margin-top:14px; margin-bottom:15px; flex-wrap:wrap }
+.search { position:relative; flex:1 1 240px }
+.search input { padding-left:36px }
+.magnify { position:absolute; width:13px; height:13px; border:1.6px solid #5f7580; border-radius:50%; top:14px; left:13px; pointer-events:none }
+.magnify::after { content:""; position:absolute; width:6px; height:1.5px; background:#5f7580; top:10px; left:8px; transform:rotate(45deg) }
+.filter-row select { width:auto; min-width:150px }
+.mode-note { font-size:.875rem; margin:-4px 0 14px }
+.grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px }
+.card { background:white; border:1px solid var(--line); border-radius:12px; min-width:0; padding:14px 15px 16px; display:flex; flex-direction:column; gap:12px }
+.card-top { display:flex; justify-content:space-between; align-items:flex-start; gap:4px }
+.card-labels { min-width:0 }
+.card-meta { font-size:.813rem; color:var(--teal); font-weight:700; margin-bottom:2px }
+.card[data-group="太陰暦"] .card-meta { color:#68506e }
+.card[data-group="太陰太陽暦"] .card-meta { color:#725426 }
+.card[data-group="マヤ暦"] .card-meta { color:#78514b }
+.card[data-group="日付形式"] .card-meta { color:#3d5d78 }
+.card h3 { color:var(--ink); font-size:1rem; font-weight:750; overflow-wrap:anywhere }
+.star { padding:0; margin:-6px -5px 0 0; width:38px; height:38px; display:grid; place-items:center; flex:none; font-size:1.28rem; color:#526c79; border:0; border-radius:7px; background:transparent }
+.star:hover { background:var(--teal-light) }
+.star[aria-pressed="true"] { color:#926012 }
+.values { display:grid; gap:5px; margin-top:auto }
+.value-line { display:flex; align-items:baseline; gap:7px; min-width:0 }
+.date-tag { align-self:flex-start; border-radius:4px; margin-top:3px; background:#e7f4ef; padding:1px 5px }
+.value { font-size:clamp(1.1rem,2vw,1.4rem); line-height:1.3; font-weight:750; font-variant-numeric:tabular-nums; overflow-wrap:anywhere }
+.unavailable { font-size:.93rem; color:var(--quiet); overflow-wrap:anywhere }
+.secondary { display:block; color:var(--quiet); font-size:.813rem; font-weight:500; margin-top:3px }
+.empty { padding:22px; color:var(--quiet) }
+.notes { margin-top:25px; padding:13px 18px }
+.notes summary { font-weight:750 }
+.notes ul { padding-inline-start:1.3em; color:var(--quiet) }
+.notes li + li { margin-top:7px }
+.source-links { display:flex; flex-wrap:wrap; gap:6px 16px }
+.source-links a { color:var(--teal) }
+.footer { color:var(--quiet); font-size:.875rem; padding-block:27px }
+@media(max-width:900px) {
+  .grid { grid-template-columns:repeat(2,minmax(0,1fr)) }
+  .orbit { right:-110px; opacity:.75 }
+}
+@media(max-width:600px) {
+  .wrap { width:calc(100% - 28px) }
+  .hero-inner { height:266px; padding-top:17px }
+  .hero-content { margin-top:28px }
+  .orbit { right:-250px }
+  .small-only { display:initial }
+  .hero p { font-size:.94rem }
+  .input-panel { padding-inline:13px }
+  .date-line { margin-inline:-13px; padding-inline:13px }
+  .fields .cal-field { flex-basis:100% }
+  .fields .era-field { flex-basis:100% }
+  .fields label { flex-basis:62px }
+  .fields .primary { flex-basis:100% }
+  .diff { margin-left:0 }
+  .grid { grid-template-columns:1fr }
+  .search { flex-basis:100% }
+  .results { margin-top:25px }
+  h2 { font-size:1.27rem }
+}
+@media(prefers-reduced-motion:no-preference) {
+  button { transition:background-color .15s,border-color .15s }
+}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap hero-inner">
+    <div class="brand"><span class="brand-icon" aria-hidden="true"></span> 世界の暦帳</div>
+    <div class="hero-content">
+      <h1>世界の暦を<br class="small-only">ひとつの画面で。</h1>
+      <p>日付を選んで、世界の22種類の暦を見比べる。</p>
+    </div>
+    <div class="orbit" aria-hidden="true"><i></i><i></i><i></i><b></b></div>
+  </div>
+</header>
+<main class="wrap">
+  <section class="surface input-panel" aria-labelledby="input-title">
+    <div class="section-head">
+      <h2 id="input-title">比較する日付</h2>
+      <button type="button" class="quiet" id="toggle-b" aria-pressed="false">＋ 日付を追加</button>
+    </div>
+    <div id="editors"></div>
+    <div class="date-line" id="date-line" aria-live="polite"></div>
+  </section>
+  <section class="results" aria-labelledby="results-title">
+    <div class="section-head result-head">
+      <div><h2 id="results-title">暦の比較</h2><p id="result-count" class="muted" aria-live="polite"></p></div>
+      <button type="button" id="csv" class="quiet">CSV 保存</button>
+    </div>
+    <div class="filter-row">
+      <label class="search"><span class="magnify" aria-hidden="true"></span><input type="search" id="search" placeholder="暦の名前で検索" aria-label="暦の名前で検索"></label>
+      <select id="category" aria-label="暦の種類">
+        <option value="">すべての種類</option><option>太陽暦</option><option>太陰暦</option><option>太陰太陽暦</option><option>マヤ暦</option><option>日付形式</option>
+      </select>
+      <select id="display-mode" aria-label="結果の表示形式" aria-describedby="mode-note">
+        <option value="original">表示形式：標準</option>
+        <option value="ymd">表示形式：年月日</option>
+      </select>
+      <button type="button" id="favorites" class="quiet" aria-pressed="false">☆ お気に入り</button>
+    </div>
+    <p id="mode-note" class="mode-note muted" hidden>暦ごとの年・月・日を数字でそろえます。ツォルキン、ISO週日付、ユリウス日などは固有の表記で表示します。</p>
+    <div class="grid" id="results"></div>
+    <p id="empty" class="surface empty" hidden>条件に一致する暦がありません。</p>
+  </section>
+  <details class="surface notes">
+    <summary>対応範囲と計算方法</summary>
+    <ul>
+      <li>西暦はグレゴリオ暦を過去にもさかのぼって適用します。西暦・ユリウス暦の年欄では、0 が紀元前1年、−1 が紀元前2年です。民国紀元の年欄では、0 が民国前1年です。</li>
+      <li>タイ仏暦は1941年以降、和暦は太陽暦へ改暦した1873年以降に対応します。将来の日付には令和を適用します。</li>
+      <li>ネパール暦（ビクラム・サンバット）は BS 2000〜2090 年の月別日数表を使用します。範囲は西暦 <span id="bs-range"></span> です。</li>
+      <li>エチオピア暦、ユダヤ暦、中国旧暦、その他一部の暦は、ブラウザーの国際化データを使用します。中国・韓国旧暦では、太陰太陽暦の年が始まる西暦年を年欄に使います（西暦1901～2100年の日付に対応）。</li>
+      <li>イスラム暦の天文計算型・表式・ウンム・アルクラーは異なる方式です。実際の月の観測や地域の発表、日没を起点とする宗教上の日付とずれる場合があります。</li>
+      <li>フランス共和暦は西暦1792年9月22日〜1805年12月31日を収録しています。マヤ暦は GMT 相関を採用しています。ハアブとツォルキンは周期で繰り返すため、結果表示に対応します。</li>
+      <li>年月日モードでは、ユダヤ暦の月番号はティシュリを1月として数えます。マヤ長期暦では起点からの経過を1年360日・1か月20日で表し、月と日は0から数えます。ハアブではポプを1月とし、日は0から数えます。</li>
+      <li>暦ごとの日付範囲は、入力欄の下や変換できない結果欄で確認できます。日数差と JD・MJD の計算は世界時 00:00 を基準とします。「今日」は端末の現地日付です。</li>
+    </ul>
+    <p class="source-links"><a href="https://www.unicode.org/reports/tr35/tr35-dates.html">Unicode CLDR</a><a href="https://github.com/subeshb1/Nepali-Date">ネパール暦データ</a><a href="https://www.senat.fr/connaitre-le-senat/lhistoire-du-senat/dossiers-dhistoire/le-senat-conservateur/tableau-de-concordance-entre-les-calendriers-republicain-et-gregorien.html">フランス元老院</a><a href="https://maya.nmai.si.edu/calendar/calendar-system">スミソニアン協会</a><a href="https://aa.usno.navy.mil/data/JulianDate">米国海軍天文台</a></p>
+  </details>
+</main>
+<footer class="wrap footer">世界の暦帳</footer>
+<noscript><p class="wrap">暦を変換するには JavaScript を有効にしてください。</p></noscript>
+<template id="editor-template">
+  <form class="editor" novalidate>
+    <fieldset>
+      <legend></legend>
+      <div class="fields">
+        <label class="cal-field">入力する暦<select name="calendar"></select></label>
+        <label class="era-field" hidden>元号<select name="era"></select></label>
+        <label class="year-field">年<input type="number" name="year" step="1" inputmode="text" required></label>
+        <label class="month-field">月<select name="month"></select></label>
+        <label class="day-field">日<select name="day"></select></label>
+        <label class="long-field" hidden>長期暦の日付<input type="text" spellcheck="false" name="long" placeholder="13.0.0.0.0"></label>
+        <button type="submit" class="primary">変換する</button>
+      </div>
+      <p class="entry-info muted"></p>
+      <p class="error" role="alert" hidden></p>
+      <div class="date-actions">
+        <button type="button" class="quiet" data-step="-1">前日</button>
+        <button type="button" class="quiet" data-today>今日</button>
+        <button type="button" class="quiet" data-step="1">翌日</button>
+      </div>
+    </fieldset>
+  </form>
+</template>
+<script>
+// Month lengths from Nepali-Date, used under the MIT license.
+const nepalMonths = [
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2000
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2001
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2002
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2003
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2004
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2005
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2006
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2007
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 29, 31], // 2008
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2009
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2010
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2011
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30], // 2012
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2013
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2014
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2015
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30], // 2016
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2017
+  [31, 32, 31, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2018
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2019
+  [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30], // 2020
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2021
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30], // 2022
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2023
+  [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30], // 2024
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2025
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2026
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2027
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2028
+  [31, 31, 32, 31, 32, 30, 30, 29, 30, 29, 30, 30], // 2029
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2030
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2031
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2032
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2033
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2034
+  [30, 32, 31, 32, 31, 31, 29, 30, 30, 29, 29, 31], // 2035
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2036
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2037
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2038
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30], // 2039
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2040
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2041
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2042
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30], // 2043
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2044
+  [31, 32, 31, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2045
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2046
+  [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30], // 2047
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2048
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30], // 2049
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2050
+  [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30], // 2051
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2052
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30], // 2053
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2054
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2055
+  [31, 31, 32, 31, 32, 30, 30, 29, 30, 29, 30, 30], // 2056
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2057
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2058
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2059
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2060
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2061
+  [30, 32, 31, 32, 31, 31, 29, 30, 29, 30, 29, 31], // 2062
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2063
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2064
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2065
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 29, 31], // 2066
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2067
+  [31, 31, 32, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2068
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2069
+  [31, 31, 31, 32, 31, 31, 29, 30, 30, 29, 30, 30], // 2070
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2071
+  [31, 32, 31, 32, 31, 30, 30, 29, 30, 29, 30, 30], // 2072
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], // 2073
+  [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30], // 2074
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2075
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30], // 2076
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2077
+  [31, 31, 31, 32, 31, 31, 30, 29, 30, 29, 30, 30], // 2078
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2079
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 30], // 2080
+  [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 29, 31], // 2081
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2082
+  [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], // 2083
+  [31, 31, 32, 31, 31, 30, 30, 30, 29, 30, 30, 30], // 2084
+  [31, 32, 31, 32, 30, 31, 30, 30, 29, 30, 30, 30], // 2085
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], // 2086
+  [31, 31, 32, 31, 31, 31, 30, 30, 29, 30, 30, 30], // 2087
+  [30, 31, 32, 32, 30, 31, 30, 30, 29, 30, 30, 30], // 2088
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], // 2089
+  [30, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], // 2090
+];
+
+const DAY = 86400000;
+const JDN_EPOCH = 2440588;
+const mod = (n, d) => ((n % d) + d) % d;
+const floor = Math.floor;
+const pad = n => String(n).padStart(2, '0');
+const parts = (y, m, d, note = '') => ({y, m: String(m), d, note});
+
+function gregDay(y, m, d) {
+  const t = new Date(0);
+  t.setUTCFullYear(y, m - 1, d);
+  return t.getTime() / DAY;
+}
+function greg(n) {
+  const t = new Date(n * DAY);
+  return parts(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
+}
+const MIN = gregDay(-4000, 1, 1);
+const MAX = gregDay(9999, 12, 31);
+const yearLabel = y => y > 0 ? String(y) : '紀元前' + (1 - y);
+const isoYear = y => y < 0 ? '-' + String(-y).padStart(6, '0') : String(y).padStart(4, '0');
+function iso(n) {
+  const {y, m, d} = greg(n);
+  return [isoYear(y), pad(m), pad(d)].join('-');
+}
+function julian(n) {
+  const c = n + JDN_EPOCH + 32082;
+  const q = floor((4 * c + 3) / 1461);
+  const e = c - floor(1461 * q / 4);
+  const m = floor((5 * e + 2) / 153);
+  return parts(q - 4800 + floor(m / 10), m + 3 - 12 * floor(m / 10), e - floor((153 * m + 2) / 5) + 1);
+}
+
+const nepalNames = ['Baisakh','Jestha','Asar','Shrawan','Bhadra','Aswin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra'];
+const nepalStart = gregDay(1943, 4, 14);
+const nepalStarts = [nepalStart];
+for (const months of nepalMonths) {
+  nepalStarts.push(nepalStarts.at(-1) + months.reduce((sum, length) => sum + length, 0));
+}
+function nepal(n) {
+  const index = nepalStarts.findIndex(start => start > n) - 1;
+  if (index < 0) return null;
+  let offset = n - nepalStarts[index];
+  const months = nepalMonths[index];
+  let m = 0;
+  while (offset >= months[m]) offset -= months[m++];
+  return parts(2000 + index, m + 1, offset + 1, nepalNames[m]);
+}
+
+const frenchNames = ['Vendémiaire','Brumaire','Frimaire','Nivôse','Pluviôse','Ventôse','Germinal','Floréal','Prairial','Messidor','Thermidor','Fructidor','補完日'];
+const frenchStarts = [22,22,22,23,22,22,22,23,23,23,23,24,23,23].map((d,i) => gregDay(1792+i,9,d));
+frenchStarts.push(gregDay(1806,1,1));
+function french(n) {
+  const y = frenchStarts.findIndex(start => start > n);
+  if (y <= 0) return null;
+  const offset = n - frenchStarts[y-1];
+  const month = floor(offset / 30);
+  return parts(y, month + 1, mod(offset, 30) + 1, frenchNames[month]);
+}
+const eras = [
+  ['明治',1868,gregDay(1873,1,1)], ['大正',1912,gregDay(1912,7,30)],
+  ['昭和',1926,gregDay(1926,12,25)], ['平成',1989,gregDay(1989,1,8)],
+  ['令和',2019,gregDay(2019,5,1)]
+];
+const japanese = n => {
+  const index = eras.findLastIndex(era => n >= era[2]);
+  if (index < 0) return null;
+  const p = greg(n);
+  return {...p, y: p.y - eras[index][1] + 1, era: index};
+};
+
+const mayaEpoch = 584283 - JDN_EPOCH;
+const mayaDays = n => n - mayaEpoch;
+function mayaYearMonthDay(n) {
+  const days = mayaDays(n);
+  return floor(days / 360) + '年' + floor(mod(days, 360) / 20) + '月' + mod(days, 20) + '日';
+}
+const mayaLong = n => [144000,7200,360,20,1].map((unit, i, units) => {
+  const d = mayaDays(n);
+  return floor((i ? mod(d, units[i-1]) : d) / unit);
+}).join('.');
+const tzolkinNames = ['Imix','Ik’','Ak’b’al','K’an','Chikchan','Kimi','Manik’','Lamat','Muluk','Ok','Chuwen','Eb’','B’en','Ix','Men','Kib’','Kab’an','Etz’nab’','Kawak','Ajaw'];
+const haabNames = ['Pop','Wo’','Sip','Sotz’','Sek','Xul','Yaxk’in','Mol','Ch’en','Yax','Sak’','Keh','Mak','K’ank’in','Muwan','Pax','K’ayab','Kumk’u','Wayeb’'];
+function tzolkin(n) {
+  const d = mayaDays(n);
+  return (mod(d+3,13)+1) + ' ' + tzolkinNames[mod(d+19,20)];
+}
+function haab(n) {
+  const p = haabParts(n);
+  return p.d + ' ' + haabNames[p.month - 1];
+}
+function haabParts(n) {
+  const d = mod(mayaDays(n) + 348, 365);
+  return {month:floor(d / 20) + 1, d:mod(d,20)};
+}
+function isoWeek(n) {
+  const weekday = mod(n + 3, 7) + 1;
+  const thursday = n + 4 - weekday;
+  const y = greg(thursday).y;
+  return isoYear(y) + '-W' + pad(floor((thursday - gregDay(y, 1, 1)) / 7) + 1) + '-' + weekday;
+}
+
+const fmtCache = new Map();
+function intlParts(id, n, locale = 'en-US') {
+  const key = id + '/' + locale;
+  if (!fmtCache.has(key)) {
+    const fmt = new Intl.DateTimeFormat(locale, {calendar:id, year:'numeric', month:'numeric', day:'numeric', timeZone:'UTC'});
+    fmtCache.set(key, fmt.resolvedOptions().calendar === id ? fmt : null);
+  }
+  const fmt = fmtCache.get(key);
+  if (!fmt) return null;
+  const p = Object.fromEntries(fmt.formatToParts(n * DAY).map(v => [v.type, v.value]));
+  const m = (p.month || '').replace(/^Mo/, '').replace(/bis$/i, 'b');
+  return parts(Number(p.relatedYear ?? p.year), m, Number(p.day));
+}
+const catalogs = [
+  ['greg','西暦（グレゴリオ暦）','太陽暦','世界標準',greg,MIN,MAX,'西暦 AD CE グレゴリオ Gregorian 紀元前'],
+  ['thai','タイ仏暦','太陽暦','タイ',n => { const p=greg(n); return {...p, y:p.y+543}; },gregDay(1941,1,1),MAX,'仏紀 仏歴 Buddhist BE タイ太陽暦'],
+  ['eth','エチオピア暦','太陽暦','エチオピア', 'ethiopic',gregDay(9,1,1),MAX,'Ethiopian Ge’ez Amete Mihret'],
+  ['bs','ネパール暦','太陽暦','ネパール',nepal,nepalStart,nepalStarts.at(-1)-1,'ネパール歴 ビクラム・サンバット Bikram Sambat BS'],
+  ['jp','和暦','太陽暦','日本',japanese,eras[0][2],MAX,'元号 明治 大正 昭和 平成 令和'],
+  ['jul','ユリウス暦','太陽暦','欧州・東方教会など',julian,MIN,MAX,'Julian 旧西暦'],
+  ['persian','イラン暦','太陽暦','イラン・アフガニスタン','persian',gregDay(622,3,22),gregDay(2500,12,31),'ペルシャ暦 ペルシア暦 Solar Hijri AP'],
+  ['hebrew','ユダヤ暦','太陰太陽暦','ユダヤ教','hebrew',MIN,MAX,'ヘブライ暦 Hebrew AM'],
+  ['chinese','中国旧暦','太陰太陽暦','中国','chinese',gregDay(1901,1,1),gregDay(2100,12,31),'農暦 春節 Chinese 閏月'],
+  ['dangi','韓国旧暦','太陰太陽暦','韓国','dangi',gregDay(1901,1,1),gregDay(2100,12,31),'陰暦 Dangi 閏月'],
+  ['saka','インド国定暦','太陽暦','インド','indian',gregDay(79,1,1),MAX,'サカ暦 Śaka Saka'],
+  ['roc','民国紀元','太陽暦','台湾',n => { const p=greg(n); return {...p, y:p.y-1911}; },MIN,MAX,'台湾暦 中華民国 ROC 民国前'],
+  ['coptic','コプト暦','太陽暦','エジプト・コプト教会','coptic',gregDay(285,1,1),MAX,'Coptic AM'],
+  ['ethioaa','エチオピア暦（世界創造紀元）','太陽暦','エチオピア','ethioaa',MIN,MAX,'Amete Alem AA エチオピア歴'],
+  ['hijri','イスラム暦（天文計算型）','太陰暦','ICU の月相モデル','islamic',gregDay(623,1,1),gregDay(2500,12,31),'ヒジュラ暦 Islamic Hijri AH'],
+  ['civil','イスラム暦（民用表式）','太陰暦','金曜日起点の計算式','islamic-civil',gregDay(622,7,19),MAX,'ヒジュラ暦 Civil Tabular AH'],
+  ['tbla','イスラム暦（木曜起点表式）','太陰暦','木曜日起点の計算式','islamic-tbla',gregDay(622,7,18),MAX,'ヒジュラ暦 Tabular AH'],
+  ['umm','イスラム暦（ウンム・アルクラー）','太陰暦','サウジアラビア','islamic-umalqura',gregDay(1882,11,12),gregDay(2174,11,25),'ヒジュラ暦 Umm al-Qura AH'],
+  ['fr','フランス共和暦','太陽暦','フランス革命期',french,frenchStarts[0],frenchStarts.at(-1)-1,'革命暦 Republican Vendémiaire'],
+  ['maya','マヤ長期暦','マヤ暦','メソアメリカ',null,mayaEpoch,MAX,'長期計数 Long Count GMT',mayaLong],
+  ['haab','マヤ暦（ハアブ）','マヤ暦','365日周期',null,mayaEpoch,MAX,'Haab 太陽暦',haab],
+  ['tzolkin','マヤ暦（ツォルキン）','マヤ暦','260日周期',null,mayaEpoch,MAX,'Tzolkin Tzolk’in 儀礼暦',tzolkin],
+  ['week','ISO 週日付','日付形式','週番号・曜日',null,MIN,MAX,'ISO 8601',isoWeek],
+  ['ordinal','ISO 年内通算日','日付形式','年初からの日数',null,MIN,MAX,'ISO 8601',n => isoYear(greg(n).y) + '-' + String(n-gregDay(greg(n).y,1,1)+1).padStart(3,'0')],
+  ['jd','ユリウス日（JD）','日付形式','世界時 00:00',null,MIN,MAX,'Julian Date 天文学',n => (n+JDN_EPOCH-0.5).toFixed(1)],
+  ['mjd','修正ユリウス日（MJD）','日付形式','世界時 00:00',null,MIN,MAX,'Modified Julian Date',n => String(n+40587)]
+];
+const items = catalogs.map(([id,name,group,region,reader,min,max,aliases,plain]) => {
+  const read = typeof reader === 'string' ? n => intlParts(reader,n) : reader;
+  const supported = typeof reader !== 'string' || read(gregDay(2026,1,1)) !== null;
+  return {id,name,group,region,min,max,aliases,plain,read,supported, input:supported && (Boolean(read) || id === 'maya')};
+});
+const byId = Object.fromEntries(items.map(item => [item.id,item]));
+
+function monthLabel(item, p) {
+  if (item.id === 'fr') return p.note;
+  if (item.id === 'bs') return p.m + '月 ' + p.note;
+  if (/^\d+b$/.test(p.m)) return '閏' + p.m.slice(0,-1) + '月';
+  return /^\d+$/.test(p.m) ? p.m + '月' : p.m;
+}
+const eraPrefixes = {thai:'仏暦',eth:'AM ',ethioaa:'AA ',persian:'AP ',hebrew:'AM ',saka:'サカ ',coptic:'AM ',hijri:'AH ',civil:'AH ',tbla:'AH ',umm:'AH ',bs:'BS '};
+function formatted(item,n,mode = 'original') {
+  if (!item.supported) return null;
+  if (n < item.min || n > item.max) return null;
+  const numeric = mode === 'ymd';
+  if (numeric && item.id === 'maya') return mayaYearMonthDay(n);
+  if (numeric && item.id === 'haab') {
+    const p = haabParts(n);
+    return p.month + '月' + p.d + '日';
+  }
+  if (item.plain) return item.plain(n);
+  const p = item.read(n);
+  const year = item.id === 'jp' ? eras[p.era][0] + (p.y === 1 ? '元' : p.y)
+    : item.id === 'roc' ? (p.y > 0 ? '民国' + p.y : '民国前' + (1-p.y))
+    : item.id === 'greg' || item.id === 'jul' ? yearLabel(p.y)
+    : (eraPrefixes[item.id] || '') + p.y;
+  let month = monthLabel(item,p);
+  if (numeric && item.id === 'hebrew') {
+    const monthNumber = intlParts('hebrew',n,'ja-JP')?.m;
+    if (/^\d+$/.test(monthNumber)) month = monthNumber + '月';
+  }
+  if (numeric && item.id === 'fr' && p.m !== '13') month = p.m + '月';
+  if (numeric && item.id === 'bs') month = p.m + '月';
+  if (numeric) return year + '年' + month + p.d + '日';
+  if (item.id === 'bs') return year + '年 ' + p.m + '月' + p.d + '日';
+  return year + '年' + (month.endsWith('月') ? '' : ' ') + month + (month.endsWith('月') ? '' : ' ') + p.d + '日';
+}
+function firstYearDay(item, year, era) {
+  let lo = item.id === 'jp' ? eras[era][2] : item.min;
+  let hi = item.id === 'jp' && eras[era+1] ? eras[era+1][2] : item.max + 1;
+  const end = hi;
+  while (lo < hi) {
+    const mid = floor((lo+hi)/2);
+    if (item.read(mid).y < year) lo = mid+1;
+    else hi = mid;
+  }
+  return lo < end && item.read(lo).y === year ? lo : null;
+}
+function calendarMonths(item, year, era = 0) {
+  const start = firstYearDay(item,year,era);
+  if (start === null) return [];
+  const months = [];
+  for (let n=start; n<=item.max; n++) {
+    const p = item.read(n);
+    if (p.y !== year || (item.id === 'jp' && p.era !== era)) break;
+    if (months.at(-1)?.key !== p.m) months.push({key:p.m,label:monthLabel(item,p),days:[]});
+    months.at(-1).days.push({day:p.d,n});
+  }
+  return months;
+}
+
+const $ = s => document.querySelector(s);
+const today = () => {
+  const time = new Date();
+  return gregDay(time.getFullYear(),time.getMonth()+1,time.getDate());
+};
+const weekdayNames = ['日','月','火','水','木','金','土'];
+const fullDate = n => formatted(byId.greg,n) + '（' + weekdayNames[mod(n+4,7)] + '）';
+const bounds = c => iso(c.min) + ' ～ ' + iso(c.max);
+const normalize = s => s.normalize('NFKC').toLowerCase().trim();
+const editors = [];
+let second = false;
+let onlyFavorites = false;
+let favorites = new Set();
+try {
+  const saved = JSON.parse(localStorage.getItem('calendar-favorites') || '[]');
+  if (Array.isArray(saved)) favorites = new Set(saved.filter(id => Object.hasOwn(byId,id)));
+} catch {}
+
+function option(value, label) {
+  return new Option(label, value);
+}
+function showError(editor,text = '') {
+  editor.error.textContent = text;
+  editor.error.hidden = !text;
+}
+function populateDays(editor, previous) {
+  const record = editor.months.find(m => m.key === editor.controls.month.value);
+  const days = record?.days ?? [];
+  editor.controls.day.replaceChildren(...days.map(d => option(d.day,d.day + '日')));
+  editor.controls.day.disabled = !days.length;
+  if (days.some(d => d.day === Number(previous))) editor.controls.day.value = previous;
+}
+function populateMonths(editor, previousMonth, previousDay) {
+  const {controls, item} = editor;
+  const year = controls.year.valueAsNumber;
+  editor.months = Number.isInteger(year) ? calendarMonths(item,year,Number(controls.era.value)) : [];
+  controls.month.replaceChildren(...editor.months.map(m => option(m.key,m.label)));
+  controls.month.disabled = !editor.months.length;
+  if (editor.months.some(m => m.key === previousMonth)) controls.month.value = previousMonth;
+  populateDays(editor,previousDay);
+}
+function fillEditor(editor) {
+  const {form, controls, item, day} = editor;
+  const long = item.id === 'maya';
+  for (const field of ['year','month','day']) form.querySelector('.' + field + '-field').hidden = long;
+  form.querySelector('.era-field').hidden = item.id !== 'jp';
+  form.querySelector('.long-field').hidden = !long;
+  const outOfRange = day < item.min || day > item.max;
+  const displayed = Math.max(item.min,Math.min(day,item.max));
+  controls.calendar.value = item.id;
+  if (long) controls.long.value = mayaLong(displayed);
+  else {
+    const p = item.read(displayed);
+    controls.era.value = p.era ?? 0;
+    controls.year.value = p.y;
+    populateMonths(editor,p.m,p.d);
+  }
+  const tips = {greg:'年0＝紀元前1年。',jul:'年0＝紀元前1年。',roc:'年0＝民国前1年。',chinese:'年は旧暦の年が始まる西暦年。',dangi:'年は旧暦の年が始まる西暦年。',maya:'例 13.0.0.0.0（西暦2012-12-21）。'};
+  editor.info.textContent = '対応する西暦 ' + bounds(item) + (tips[item.id] ? '　' + tips[item.id] : '');
+  showError(editor,outOfRange ? '比較中の日付は、この暦の対応範囲外です。近い境界日を入力欄に表示しています。' : '');
+}
+function setDay(editor, day, allowSwitch = false) {
+  if (day < MIN || day > MAX) {
+    showError(editor,'このツールの日付範囲を超えています。');
+    return;
+  }
+  if (allowSwitch && (day < editor.item.min || day > editor.item.max)) editor.item = byId.greg;
+  editor.day = day;
+  fillEditor(editor);
+  render();
+}
+function inputDay(editor) {
+  if (editor.item.id === 'maya') {
+    const match = normalize(editor.controls.long.value).match(/^(\d{1,3})\.(\d{1,2})\.(\d{1,2})\.(\d{1,2})\.(\d{1,2})$/);
+    if (!match) return null;
+    const [b,k,t,u,d] = match.slice(1).map(Number);
+    if (k > 19 || t > 19 || u > 17 || d > 19) return null;
+    const n = mayaEpoch + b*144000 + k*7200 + t*360 + u*20 + d;
+    return n <= MAX ? n : null;
+  }
+  const {month,day} = editor.controls;
+  const dates = editor.months.find(m => m.key === month.value)?.days;
+  return dates?.find(d => d.day === Number(day.value))?.n ?? null;
+}
+function createEditor(name, day) {
+  const form = $('#editor-template').content.firstElementChild.cloneNode(true);
+  form.querySelector('legend').textContent = '日付 ' + name;
+  const controls = Object.fromEntries(['calendar','era','year','month','day','long'].map(key => [key,form.elements.namedItem(key)]));
+  controls.calendar.replaceChildren(...items.filter(c => c.input).map(c => option(c.id,c.name)));
+  controls.era.replaceChildren(...eras.map((era,i) => option(i,era[0])));
+  const editor = {form,controls,item:byId.greg,day,error:form.querySelector('.error'),info:form.querySelector('.entry-info'),months:[]};
+  controls.calendar.addEventListener('change', () => {
+    editor.item = byId[controls.calendar.value];
+    fillEditor(editor);
+  });
+  const onYear = () => {
+    populateMonths(editor,controls.month.value,controls.day.value);
+    showError(editor);
+  };
+  controls.year.addEventListener('input',onYear);
+  controls.era.addEventListener('change',onYear);
+  controls.month.addEventListener('change',() => populateDays(editor,controls.day.value));
+  form.addEventListener('submit',event => {
+    event.preventDefault();
+    const n = inputDay(editor);
+    if (n === null) showError(editor,editor.item.id === 'maya' ? '対応範囲内の日付を、13.0.0.0.0 のように入力してください。' : '対応範囲内の年・月・日を入力してください。');
+    else setDay(editor,n);
+  });
+  for (const button of form.querySelectorAll('[data-step]')) {
+    button.addEventListener('click', () => setDay(editor,editor.day+Number(button.dataset.step),true));
+  }
+  form.querySelector('[data-today]').addEventListener('click',() => setDay(editor,today(),true));
+  fillEditor(editor);
+  $('#editors').append(form);
+  return editor;
+}
+function visibleItems() {
+  const terms = normalize($('#search').value).split(/\s+/).filter(Boolean);
+  const category = $('#category').value;
+  return items.filter(c => {
+    const searchable = normalize([c.name,c.region,c.group,c.aliases].join(' '));
+    return (!category || c.group === category) && (!onlyFavorites || favorites.has(c.id))
+      && terms.every(term => searchable.includes(term));
+  });
+}
+function node(tag, cls, text) {
+  const elt = document.createElement(tag);
+  if (cls) elt.className = cls;
+  if (text !== undefined) elt.textContent = text;
+  return elt;
+}
+function appendValue(container,c,n,label) {
+  const line = node('div','value-line');
+  if (second) line.append(node('span','date-tag',label));
+  const mode = $('#display-mode').value;
+  const value = formatted(c,n,mode);
+  const text = node('div',value ? 'value' : 'unavailable',value || (c.supported ? '対応範囲外' : 'このブラウザーでは未対応'));
+  if (c.id === 'bs' && value) text.append(node('span','secondary',c.read(n).note));
+  if (value && mode === 'ymd') {
+    const original = formatted(c,n);
+    if (c.id === 'maya') text.append(node('span','secondary',original + ' ・ 1年＝360日、1か月＝20日'));
+    if (c.id === 'haab') text.append(node('span','secondary',original + ' ・ 年のない365日周期'));
+    if (c.id === 'hebrew' || c.id === 'fr') {
+      const p = c.read(n);
+      if (original !== value && !(c.id === 'fr' && p.m === '13')) text.append(node('span','secondary',monthLabel(c,p)));
+    }
+  }
+  if (!value && c.supported) text.append(node('span','secondary',bounds(c)));
+  line.append(text);
+  container.append(line);
+}
+function renderResults() {
+  const visible = visibleItems();
+  const cols = visible.filter(c => c.group !== '日付形式').length;
+  const forms = visible.length-cols;
+  $('#result-count').textContent = cols + '種類の暦' + (forms ? ' ＋ ' + forms + '種類の日付形式' : '');
+  $('#csv').disabled = !visible.length;
+  $('#empty').hidden = Boolean(visible.length);
+  const cards = visible.map(c => {
+    const card = node('article','card');
+    card.dataset.group = c.group;
+    const top = node('div','card-top');
+    const labels = node('div','card-labels');
+    labels.append(node('p','card-meta',c.group + ' ／ ' + c.region),node('h3','',c.name));
+    const star = node('button','star');
+    star.type = 'button';
+    const updateStar = () => {
+      star.textContent = favorites.has(c.id) ? '★' : '☆';
+      star.setAttribute('aria-pressed',String(favorites.has(c.id)));
+      star.setAttribute('aria-label',c.name + 'のお気に入り');
+    };
+    updateStar();
+    star.addEventListener('click',() => {
+      if (favorites.has(c.id)) favorites.delete(c.id);
+      else favorites.add(c.id);
+      try { localStorage.setItem('calendar-favorites', JSON.stringify([...favorites])); } catch {}
+      if (onlyFavorites) {
+        renderResults();
+        ($('#results .star') || $('#favorites')).focus();
+      } else updateStar();
+    });
+    top.append(labels,star);
+    card.append(top);
+    const values = node('div','values');
+    appendValue(values,c,editors[0].day,'A');
+    if (second) appendValue(values,c,editors[1].day,'B');
+    card.append(values);
+    return card;
+  });
+  $('#results').replaceChildren(...cards);
+}
+function render() {
+  const line = $('#date-line');
+  const a = editors[0].day;
+  const b = editors[1].day;
+  line.replaceChildren(node('span','date-caption',second ? 'A' : '比較中の西暦'),node('strong','',fullDate(a)));
+  if (second) {
+    line.append(node('span','date-caption','B'),node('strong','',fullDate(b)));
+    const delta = b-a;
+    line.append(node('span','diff',delta ? 'B は A の ' + Math.abs(delta).toLocaleString('ja') + ' 日' + (delta > 0 ? '後' : '前') : '同じ日'));
+  }
+  renderResults();
+}
+function downloadCSV() {
+  const header = ['暦','種類','地域・方式','日付 A（'+iso(editors[0].day)+'）'];
+  if (second) header.push('日付 B（'+iso(editors[1].day)+'）');
+  const mode = $('#display-mode').value;
+  const getCell = (c,i) => formatted(c,editors[i].day,mode) ?? (c.supported ? '対応範囲外' : 'ブラウザー未対応');
+  const rows = visibleItems().map(c => {
+    const row = [c.name,c.group,c.region,getCell(c,0)];
+    if (second) row.push(getCell(c,1));
+    return row;
+  });
+  const csv = [header,...rows].map(row => row.map(v => '"' + v.replaceAll('"','""') + '"').join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob(['\ufeff',csv],{type:'text/csv;charset=utf-8;'}));
+  const link = node('a');
+  link.href = url;
+  link.download = '世界の暦帳-' + iso(editors[0].day) + '.csv';
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url),1000);
+}
+
+editors.push(createEditor('A',today()),createEditor('B',today()+1));
+editors[1].form.hidden = true;
+$('#toggle-b').addEventListener('click',event => {
+  second = !second;
+  editors[1].form.hidden = !second;
+  event.currentTarget.textContent = second ? '日付 B を閉じる' : '＋ 日付を追加';
+  event.currentTarget.setAttribute('aria-pressed',String(second));
+  render();
+});
+$('#search').addEventListener('input',renderResults);
+$('#category').addEventListener('change',renderResults);
+$('#display-mode').addEventListener('change',event => {
+  $('#mode-note').hidden = event.currentTarget.value !== 'ymd';
+  renderResults();
+});
+$('#favorites').addEventListener('click',event => {
+  onlyFavorites = !onlyFavorites;
+  event.currentTarget.setAttribute('aria-pressed',String(onlyFavorites));
+  renderResults();
+});
+$('#csv').addEventListener('click',downloadCSV);
+$('#bs-range').textContent = bounds(byId.bs);
+render();
+</script>
+<!--
+MIT License
+
+Copyright (c) 2020 Subesh Bhandari <subeshb1@gmail.com>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+</body>
+</html>
